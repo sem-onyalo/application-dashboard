@@ -17,15 +17,17 @@ func NewEndpoint(database service.Database) *Endpoint {
 }
 
 // GetAll function gets all endpoints from the datastore
-func (e Endpoint) GetAll() response.GetAllEndpoints {
+func (e Endpoint) GetAll() (response.GetAllEndpoints, error) {
 	rsp, err := e.Database.NewConnection()
-	defer rsp.Store.Close()
 
+	var r response.GetAllEndpoints
 	if err != nil {
-		panic(err)
+		return r, err
 	}
+	defer rsp.Store.Close()
 
 	endpoints := make([]entity.Endpoint, 1)
 	rsp.Store.Find(&endpoints)
-	return response.GetAllEndpoints{Endpoints: endpoints}
+	r = response.GetAllEndpoints{Endpoints: endpoints}
+	return r, nil
 }

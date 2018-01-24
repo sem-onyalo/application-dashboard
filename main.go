@@ -10,14 +10,21 @@ import (
 )
 
 func main() {
-	databaseInteractor, err := interactor.NewDatabase()
+	configService := interactor.NewConfig()
+
+	databaseService, err := interactor.NewDatabase(configService)
 	if err != nil {
 		panic(err)
 	}
 
-	endpointInteractor := interactor.NewEndpoint(databaseInteractor)
+	endpointService := interactor.NewEndpoint(databaseService)
 
-	response := endpointInteractor.GetAll()
+	response, err := endpointService.GetAll()
+
+	if err != nil {
+		fmt.Printf("Get all endpoints failed: %v", err)
+		return
+	}
 
 	for _, ep := range response.Endpoints {
 		timerStart := time.Now()
