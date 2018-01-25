@@ -7,17 +7,18 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/sem-onyalo/application-dashboard/service/response"
+
 	"github.com/sem-onyalo/application-dashboard/service"
 	"github.com/sem-onyalo/application-dashboard/service/request"
 )
 
+// TODO: move to config service
 const (
 	defaultWebAppPort           = 8080
 	webAppPortConfigKey         = "APPDASH_WEBAPP_PORT"
 	webAppTemplatesDirConfigKey = "APPDASH_WEBAPP_TEMPLATES_DIR"
 )
-
-// var templates = template.Must(template.ParseFiles(webAppTemplatesDirConfigKey + "\\root.htm"))
 
 // App is a service for interacting with the web application
 type App struct {
@@ -42,21 +43,34 @@ func NewApp(config service.Config) (*App, error) {
 
 	templatesDirConfig := config.GetValue(request.GetConfigValue{Key: webAppTemplatesDirConfigKey})
 	if templatesDirConfig.Value == "" {
-		return app, errors.New("Web app templates directory config value could not be found")
+		return app, errors.New("Config not found: web app templates directory ")
 	}
 
-	app = &App{Config: config, Port: port}
+	// TODO: get root html file from config APPDASH_WEBAPP_ROOTAPPFILE
+	templates := template.Must(template.ParseFiles(templatesDirConfig.Value + "\\root.htm"))
+
+	app = &App{Config: config, Port: port, templates: templates}
 	return app, nil
 }
 
 // Start runs the web application
-func (a App) Start(request request.StartApp) {
+func (a App) Start(request request.StartApp) response.StartApp {
 	var port = a.Port
 	if request.Port > 0 {
 		port = request.Port
 	}
+
 	http.HandleFunc("/", a.rootHandler)
-	http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+	srv := &http.Server{Addr: fmt.Sprintf(":%d", port)}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			// TODO: send to log service
+			fmt.Printf("Web app listen and serve error: %s", err)
+		}
+	}()
+
+	return response.StartApp{Server: srv}
 }
 
 // rootHandler is the http handler for the root path

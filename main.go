@@ -13,14 +13,34 @@ import (
 )
 
 func main() {
+
 	configService := interactor.NewConfig()
 
 	appService, err := web.NewApp(configService)
 	if err != nil {
+		// TODO: send to log service
 		fmt.Printf("Create web app failed: %v", err)
 	}
 
-	appService.Start(request.StartApp{})
+	app := appService.Start(request.StartApp{})
+	// TODO: send to log service
+	fmt.Printf("app server listening on: %v", app.Server.Addr)
+
+	var input string
+	fmt.Print("> ")
+	fmt.Scanln(&input)
+	for input != "quit" {
+		fmt.Printf("Command not supported: %s\n", input)
+		fmt.Print("> ")
+		fmt.Scanln(&input)
+	}
+
+	if err = app.Server.Shutdown(nil); err != nil {
+		fmt.Printf("App shutdown error: %s\n", err)
+	}
+	return
+
+	// --------------------------------------------------
 
 	databaseService, err := interactor.NewDatabase(configService)
 	if err != nil {

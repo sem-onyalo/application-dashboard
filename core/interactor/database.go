@@ -8,6 +8,7 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+// TODO: move to config service
 const (
 	databaseURLConfigKey = "APPDASH_DATABASE_URL"
 )
