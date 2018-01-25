@@ -1,6 +1,7 @@
 package web
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -15,16 +16,23 @@ import (
 
 // TODO: move to config service
 const (
+	webAPIVersion               = "0.1"
 	defaultWebAppPort           = 8080
 	webAppPortConfigKey         = "APPDASH_WEBAPP_PORT"
 	webAppTemplatesDirConfigKey = "APPDASH_WEBAPP_TEMPLATES_DIR"
 )
 
-// App is a service for interacting with the web application
+// App is a service for performing web application operations
 type App struct {
 	Config    service.Config
 	Port      int
 	templates *template.Template
+}
+
+// apiInfo represents the web api info
+type apiInfo struct {
+	Name    string
+	Version string
 }
 
 // NewApp returns a reference to the web application service
@@ -61,6 +69,7 @@ func (a App) Start(request request.StartApp) response.StartApp {
 	}
 
 	http.HandleFunc("/", a.rootHandler)
+	http.HandleFunc(fmt.Sprintf("/api/%s", webAPIVersion), a.rootAPIHandler)
 	srv := &http.Server{Addr: fmt.Sprintf(":%d", port)}
 
 	go func() {
@@ -80,4 +89,9 @@ func (a App) rootHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+// rootAPIHandler is the http handler for the api root path
+func (a App) rootAPIHandler(w http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(w).Encode(apiInfo{Name: "SysDash", Version: webAPIVersion})
 }

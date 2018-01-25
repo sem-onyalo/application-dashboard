@@ -5,26 +5,25 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/sem-onyalo/application-dashboard/core/interactor"
 	"github.com/sem-onyalo/application-dashboard/service/request"
+	"github.com/sem-onyalo/application-dashboard/web"
 
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"github.com/sem-onyalo/application-dashboard/core/interactor"
-	"github.com/sem-onyalo/application-dashboard/web"
 )
 
 func main() {
-
 	configService := interactor.NewConfig()
 
 	appService, err := web.NewApp(configService)
 	if err != nil {
 		// TODO: send to log service
-		fmt.Printf("Create web app failed: %v", err)
+		fmt.Printf("Create web app failed: %s\n", err)
 	}
 
 	app := appService.Start(request.StartApp{})
 	// TODO: send to log service
-	fmt.Printf("app server listening on: %v", app.Server.Addr)
+	fmt.Printf("App server listening on: %s\n", app.Server.Addr)
 
 	var input string
 	fmt.Print("> ")
