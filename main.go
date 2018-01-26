@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-	"time"
 
 	"github.com/sem-onyalo/application-dashboard/core/interactor"
 	"github.com/sem-onyalo/application-dashboard/service/request"
@@ -15,10 +13,19 @@ import (
 func main() {
 	configService := interactor.NewConfig()
 
-	appService, err := web.NewApp(configService)
+	databaseService, err := interactor.NewDatabase(configService)
+	if err != nil {
+		fmt.Printf("Create database service failed: %s\n", err)
+		return
+	}
+
+	endpointService := interactor.NewEndpoint(databaseService)
+
+	appService, err := web.NewApp(configService, endpointService)
 	if err != nil {
 		// TODO: send to log service
-		fmt.Printf("Create web app failed: %s\n", err)
+		fmt.Printf("Create web app service failed: %s\n", err)
+		return
 	}
 
 	app := appService.Start(request.StartApp{})
@@ -36,39 +43,5 @@ func main() {
 
 	if err = app.Server.Shutdown(nil); err != nil {
 		fmt.Printf("App shutdown error: %s\n", err)
-	}
-	return
-
-	// --------------------------------------------------
-
-	databaseService, err := interactor.NewDatabase(configService)
-	if err != nil {
-		panic(err)
-	}
-
-	endpointService := interactor.NewEndpoint(databaseService)
-
-	response, err := endpointService.GetAll()
-
-	if err != nil {
-		fmt.Printf("Get all endpoints failed: %v", err)
-		return
-	}
-
-	for _, ep := range response.Endpoints {
-		timerStart := time.Now()
-		// TODO: move this to an http service
-		rsp, err := http.Get(ep.URL)
-		timerEnd := time.Now()
-		timerElapsed := timerEnd.Sub(timerStart)
-
-		var result string
-		if err != nil {
-			result = "NULL"
-		} else {
-			result = rsp.Status
-		}
-
-		fmt.Printf("%s %s %fs\n", ep.Name, result, timerElapsed.Seconds())
 	}
 }

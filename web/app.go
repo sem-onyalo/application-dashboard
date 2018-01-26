@@ -25,6 +25,7 @@ const (
 // App is a service for performing web application operations
 type App struct {
 	Config    service.Config
+	Endpoint  service.Endpoint
 	Port      int
 	templates *template.Template
 }
@@ -36,7 +37,7 @@ type apiInfo struct {
 }
 
 // NewApp returns a reference to the web application service
-func NewApp(config service.Config) (*App, error) {
+func NewApp(config service.Config, endpoint service.Endpoint) (*App, error) {
 	var app *App
 	var err error
 	var port = defaultWebAppPort
@@ -57,7 +58,7 @@ func NewApp(config service.Config) (*App, error) {
 	// TODO: get root html file from config APPDASH_WEBAPP_ROOTAPPFILE
 	templates := template.Must(template.ParseFiles(templatesDirConfig.Value + "\\root.htm"))
 
-	app = &App{Config: config, Port: port, templates: templates}
+	app = &App{Config: config, Endpoint: endpoint, Port: port, templates: templates}
 	return app, nil
 }
 
@@ -68,8 +69,7 @@ func (a App) Start(request request.StartApp) response.StartApp {
 		port = request.Port
 	}
 
-	http.HandleFunc("/", a.rootHandler)
-	http.HandleFunc(fmt.Sprintf("/api/%s", webAPIVersion), a.rootAPIHandler)
+	a.setRoutes()
 	srv := &http.Server{Addr: fmt.Sprintf(":%d", port)}
 
 	go func() {
@@ -80,6 +80,14 @@ func (a App) Start(request request.StartApp) response.StartApp {
 	}()
 
 	return response.StartApp{Server: srv}
+}
+
+// setRoutes sets the HTTP API routes
+func (a App) setRoutes() {
+	http.HandleFunc("/", a.rootHandler)
+	http.HandleFunc(fmt.Sprintf("/api/v%s", webAPIVersion), a.rootAPIHandler)
+	http.HandleFunc(fmt.Sprintf("/api/v%s/endpoints", webAPIVersion), a.endpointsHandler)
+	http.HandleFunc(fmt.Sprintf("/api/v%s/endpoints/tests", webAPIVersion), a.endpointsTestHandler)
 }
 
 // rootHandler is the http handler for the root path
@@ -93,5 +101,47 @@ func (a App) rootHandler(w http.ResponseWriter, r *http.Request) {
 
 // rootAPIHandler is the http handler for the api root path
 func (a App) rootAPIHandler(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(apiInfo{Name: "SysDash", Version: webAPIVersion})
+	a.apiResponseHandler(w, apiInfo{Name: "SysDash", Version: webAPIVersion})
+}
+
+// endpointsHandler handles endpoint requests
+func (a App) endpointsHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		a.endpointsGetHandler(w, r)
+	default:
+		http.Error(w, "Unsupported HTTP method for path endpoints/", http.StatusBadRequest)
+	}
+}
+
+// endpointsTestHandler handler endpoint test requests
+func (a App) endpointsTestHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		testAllEndpoints, err := a.Endpoint.TestAll()
+		if err != nil {
+			// TODO: also send to log service with err
+			http.Error(w, "Test all endpoints request failed", http.StatusInternalServerError)
+		}
+		a.apiResponseHandler(w, testAllEndpoints.EndpointTests)
+	default:
+		http.Error(w, "Unsupported HTTP method for path endpoints/tests/", http.StatusBadRequest)
+	}
+}
+
+// endpointsGetHandler handles GET endpoint requests
+func (a App) endpointsGetHandler(w http.ResponseWriter, r *http.Request) {
+	getAllEndpoints, err := a.Endpoint.GetAll()
+	if err != nil {
+		// TODO: also send to log service with err
+		http.Error(w, "Get all endpoints failed", http.StatusInternalServerError)
+	}
+
+	a.apiResponseHandler(w, getAllEndpoints.Endpoints)
+}
+
+// apiResponseHandler handles the response for successful requests
+func (a App) apiResponseHandler(w http.ResponseWriter, v interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(v)
 }

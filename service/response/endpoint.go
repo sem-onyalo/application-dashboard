@@ -8,3 +8,8 @@ import (
 type GetAllEndpoints struct {
 	Endpoints []entity.Endpoint
 }
+
+// TestAllEndpoints represents the response to a TestAllEndpoints request
+type TestAllEndpoints struct {
+	EndpointTests []entity.EndpointTest
+}
