@@ -1,0 +1,26 @@
+body {
+    color: #dedede;
+    padding-top: 80px;
+    background-color: #1c1f2b;
+}
+
+.endpoint {
+    margin: 0 5px;
+    padding: 20px 10px;
+    color: #9dbed8;
+    border: 1px solid #2d3143;
+    background-color: #2d3143;
+}
+
+.endpoint .name {
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+.endpoint .url {
+    font-size: 0.8em;
+}
+
+.endpoint-tests {
+    margin-top: 30px;
+}
