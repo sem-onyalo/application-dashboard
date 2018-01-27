@@ -13,3 +13,8 @@ type GetAllEndpoints struct {
 type TestAllEndpoints struct {
 	EndpointTests []entity.EndpointTest
 }
+
+// GetEndpointTests represents the response to get a collection of endpoint tests request
+type GetEndpointTests struct {
+	EndpointTests []entity.EndpointTest
+}

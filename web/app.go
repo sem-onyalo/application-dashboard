@@ -90,7 +90,8 @@ func (a App) setRoutes() {
 	http.HandleFunc("/assets/", a.assetHandler)
 	http.HandleFunc(fmt.Sprintf("/api/v%s", webAPIVersion), a.rootAPIHandler)
 	http.HandleFunc(fmt.Sprintf("/api/v%s/endpoints", webAPIVersion), a.endpointsHandler)
-	http.HandleFunc(fmt.Sprintf("/api/v%s/endpoints/tests", webAPIVersion), a.endpointsTestHandler)
+	http.HandleFunc(fmt.Sprintf("/api/v%s/endpoints/tests", webAPIVersion), a.endpointsTestsHandler)
+	http.HandleFunc(fmt.Sprintf("/api/v%s/endpoint-tests", webAPIVersion), a.endpointTestsHandler)
 }
 
 // rootHandler is the http handler for the root path
@@ -117,7 +118,7 @@ func (a App) assetHandler(w http.ResponseWriter, r *http.Request) {
 	file, err := os.Open(templatesDirConfig.Value + r.URL.Path)
 	if err != nil {
 		// TODO: send to log service
-		fmt.Printf("Error opening url path %s: %s\\n", r.URL.Path, err)
+		fmt.Printf("Error opening url path %s: %s\n", r.URL.Path, err)
 		w.WriteHeader(404)
 	} else {
 		defer file.Close()
@@ -142,8 +143,8 @@ func (a App) endpointsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// endpointsTestHandler handler endpoint test requests
-func (a App) endpointsTestHandler(w http.ResponseWriter, r *http.Request) {
+// endpointsTestsHandler handler endpoint test requests
+func (a App) endpointsTestsHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		testAllEndpoints, err := a.Endpoint.TestAll()
@@ -172,4 +173,19 @@ func (a App) endpointsGetHandler(w http.ResponseWriter, r *http.Request) {
 func (a App) apiResponseHandler(w http.ResponseWriter, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(v)
+}
+
+// endpointTestsHandler handles endpoint-test requests
+func (a App) endpointTestsHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		getEndpointTests, err := a.Endpoint.GetTests()
+		if err != nil {
+			// TODO: also send to log service with err
+			http.Error(w, "Get endpoint tests request failed", http.StatusInternalServerError)
+		}
+		a.apiResponseHandler(w, getEndpointTests)
+	default:
+		http.Error(w, "Unsupported HTTP method for path endpoint-tests/", http.StatusBadRequest)
+	}
 }

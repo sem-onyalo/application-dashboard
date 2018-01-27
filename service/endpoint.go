@@ -8,4 +8,5 @@ import (
 type Endpoint interface {
 	GetAll() (response.GetAllEndpoints, error)
 	TestAll() (response.TestAllEndpoints, error)
+	GetTests() (response.GetEndpointTests, error)
 }
