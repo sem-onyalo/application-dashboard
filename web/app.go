@@ -110,6 +110,8 @@ func (a App) assetHandler(w http.ResponseWriter, r *http.Request) {
 		contentType = "text/css"
 	} else if strings.HasSuffix(r.URL.Path, ".js") {
 		contentType = "text/javascript"
+	} else if strings.HasSuffix(r.URL.Path, ".svg") {
+		contentType = "image/svg+xml"
 	} else {
 		contentType = "text/plain"
 	}
