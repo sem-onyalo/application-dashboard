@@ -6,6 +6,31 @@ Config = {
     apiUrl: 'http://localhost:3000/api/v0.1'
 };
 
+Constants = {
+    endpointTestsContainerCssClass: 'endpoint-tests',
+    loadingContainerCssClass: 'loading-container'
+};
+
+Element = {
+    findParentElementByClassName: function (element, className) {
+        while ((element = element.parentElement) && !element.classList.contains(className));
+        return element;
+    },
+
+    createLoadingElement: function (args) {
+        var elementId = args && args.id ? args.id : Utility.newGuid();
+        var div = document.createElement('div');
+        var span = document.createElement('span');
+        var img = document.createElement('img');
+        img.src = 'assets/loading.svg';
+        div.id = elementId;
+        div.className = Constants.loadingContainerCssClass;
+        div.appendChild(span);
+        div.appendChild(img);
+        return div;
+    }
+};
+
 Ajax = {
     getJsonRequest: function (args) {
         this.getRequest({
@@ -86,6 +111,12 @@ Ajax = {
 
     logError: function (message) {
         console.log(message);
+    }
+};
+
+Utility = {
+    newGuid: function() {
+        return Math.random().toString(36).substring(2) + (new Date()).getTime().toString(36);
     }
 };
 
@@ -212,16 +243,28 @@ EndpointsView = {
         endpointTestsTableHead.appendChild(responseStatus);
         endpointTestsTableHead.appendChild(timeElapsed);
         var endpointTestsTableBody = document.createElement('tbody');
-        var endpointTestsContainer = document.createElement('table');
-        endpointTestsContainer.classList.add("table");
+        var endpointTestsTable = document.createElement('table');
+        endpointTestsTable.classList.add("table");
+        endpointTestsTable.appendChild(endpointTestsTableHead);
+        endpointTestsTable.appendChild(endpointTestsTableBody);
+        var endpointTestsRunButton = document.createElement('button');
+        endpointTestsRunButton.innerHTML = 'Run Tests';
+        endpointTestsRunButton.classList.add('btn');
+        endpointTestsRunButton.classList.add('btn-default');
+        endpointTestsRunButton.onclick = this.endpointTestsRunButtonEventHandler;
+        var endpointTestsMenu = document.createElement('div');
+        endpointTestsMenu.classList.add('endpoint-tests-menu');
+        endpointTestsMenu.appendChild(endpointTestsRunButton);
+        var endpointTestsContainer = document.createElement('div');
         endpointTestsContainer.classList.add("endpoint-tests");
-        endpointTestsContainer.appendChild(endpointTestsTableHead);
-        endpointTestsContainer.appendChild(endpointTestsTableBody);
+        endpointTestsContainer.appendChild(endpointTestsMenu);
+        endpointTestsContainer.appendChild(endpointTestsTable);
         request.parent.appendChild(endpointTestsContainer);
 
         this.loadEndpoints({
             parent: endpointsWrapper
         });
+
         this.loadEnpointTests({
             parent: endpointTestsTableBody
         });
@@ -268,24 +311,83 @@ EndpointsView = {
     },
 
     loadEndpointTestsCallback: function (resp, args) {
+        var self = EndpointsView;
         for (var i = 0; i < resp.EndpointTests.length; i++) {
-            var testDate = document.createElement('td');
-            testDate.innerHTML = resp.EndpointTests[i].CreatedAt;
-            var name = document.createElement('td');
-            name.innerHTML = resp.EndpointTests[i].Name;
-            var url = document.createElement('td');
-            url.innerHTML = resp.EndpointTests[i].URL;
-            var responseStatus = document.createElement('td');
-            responseStatus.innerHTML = resp.EndpointTests[i].ResponseStatus;
-            var timeElapsed = document.createElement('td');
-            timeElapsed.innerHTML = resp.EndpointTests[i].TimeElapsed;
-            var row = document.createElement('tr');
-            row.appendChild(testDate);
-            row.appendChild(name);
-            row.appendChild(url);
-            row.appendChild(responseStatus);
-            row.appendChild(timeElapsed);
+            var row = self.createEndpointTestRow({
+                createdAt: resp.EndpointTests[i].CreatedAt,
+                name: resp.EndpointTests[i].Name,
+                url: resp.EndpointTests[i].URL,
+                responseStatus: resp.EndpointTests[i].ResponseStatus,
+                timeElapsed: resp.EndpointTests[i].TimeElapsed
+            });
+
             args.parent.appendChild(row);
+        }
+    },
+
+    runAllEndpointTests: function (request) {
+        var url = Config.apiUrl + '/endpoints/tests';
+        var loading = Element.createLoadingElement();
+        request.parent.appendChild(loading);
+        Ajax.getJsonRequest({
+            url: url,
+            callback: this.runAllEndpointTestsCallback,
+            callbackArgs: {
+                parent: request.parent,
+                loadingElement: loading
+            }
+        });
+    },
+
+    runAllEndpointTestsCallback: function (resp, args) {
+        var self = EndpointsView;
+        for (var i = 0; i < resp.length; i++) {
+            var row = self.createEndpointTestRow({
+                createdAt: resp[i].CreatedAt,
+                name: resp[i].Name,
+                url: resp[i].URL,
+                responseStatus: resp[i].ResponseStatus,
+                timeElapsed: resp[i].TimeElapsed
+            });
+
+            args.parent.insertBefore(row, args.parent.firstChild);
+        }
+
+        if (args.loadingElement) {
+            args.parent.removeChild(args.loadingElement);
+        }
+    },
+
+    createEndpointTestRow: function (request) {
+        var testDate = document.createElement('td');
+        testDate.innerHTML = request.createdAt;
+        var name = document.createElement('td');
+        name.innerHTML = request.name;
+        var url = document.createElement('td');
+        url.innerHTML = request.url;
+        var responseStatus = document.createElement('td');
+        responseStatus.innerHTML = request.responseStatus;
+        var timeElapsed = document.createElement('td');
+        timeElapsed.innerHTML = request.timeElapsed;
+        var row = document.createElement('tr');
+        row.appendChild(testDate);
+        row.appendChild(name);
+        row.appendChild(url);
+        row.appendChild(responseStatus);
+        row.appendChild(timeElapsed);
+        return row;
+    },
+
+    endpointTestsRunButtonEventHandler: function (e) {
+        var self = EndpointsView;
+        var endpointTestsContainer = Element.findParentElementByClassName(e.target, Constants.endpointTestsContainerCssClass);
+        var endpointTestsBody = endpointTestsContainer.getElementsByTagName('tbody')[0];
+        if (!endpointTestsBody) {
+            console.log('could not find endpoint tests container');
+        } else {
+            self.runAllEndpointTests({
+                parent: endpointTestsBody
+            });
         }
     }
 };
