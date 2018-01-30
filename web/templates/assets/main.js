@@ -115,8 +115,38 @@ Ajax = {
 };
 
 Utility = {
-    newGuid: function() {
+    newGuid: function () {
         return Math.random().toString(36).substring(2) + (new Date()).getTime().toString(36);
+    },
+    // TODO: replace with server-side OS scheduled job
+    Timer: {
+        initEndpointTestTimer: function (request) {
+            this.timerElement = request.timerElement;
+            this.offsetMinutes = request.offsetMinutes;
+            this.timerElapsedCallback = request.timerElapsedCallback;
+            this.timerElapsedCallbackArgs = request.timerElapsedCallbackArgs;
+            this.setTimerDeadline();
+            this.timerInterval = setInterval(this.runInterval, 1000);
+        },
+        runInterval: function () {
+            self = Utility.Timer;
+            var now = new Date().getTime();
+            var delta = self.timerDeadline - now;
+            var hours = Math.floor((delta % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            var minutes = Math.floor((delta % (1000 * 60 * 60)) / (1000 * 60));
+            var seconds = Math.floor((delta % (1000 * 60)) / 1000);
+            self.timerElement.innerHTML = hours + "h " + minutes + "m " + seconds + "s ";
+
+            if (delta < 0) {
+                self.setTimerDeadline();
+                self.timerElapsedCallback(self.timerElapsedCallbackArgs);
+            }
+        },
+        setTimerDeadline: function(args) {
+            var deadlineDate = new Date();
+            deadlineDate.setMinutes(deadlineDate.getMinutes() + this.offsetMinutes);
+            this.timerDeadline = deadlineDate.getTime();
+        }
     }
 };
 
@@ -247,14 +277,9 @@ EndpointsView = {
         endpointTestsTable.classList.add("table");
         endpointTestsTable.appendChild(endpointTestsTableHead);
         endpointTestsTable.appendChild(endpointTestsTableBody);
-        var endpointTestsRunButton = document.createElement('button');
-        endpointTestsRunButton.innerHTML = 'Run Tests';
-        endpointTestsRunButton.classList.add('btn');
-        endpointTestsRunButton.classList.add('btn-default');
-        endpointTestsRunButton.onclick = this.endpointTestsRunButtonEventHandler;
-        var endpointTestsMenu = document.createElement('div');
-        endpointTestsMenu.classList.add('endpoint-tests-menu');
-        endpointTestsMenu.appendChild(endpointTestsRunButton);
+        var endpointTestsMenu = this.createEndpointsTestMenu({
+            endpointTestsContainer: endpointTestsTableBody
+        });
         var endpointTestsContainer = document.createElement('div');
         endpointTestsContainer.classList.add("endpoint-tests");
         endpointTestsContainer.appendChild(endpointTestsMenu);
@@ -326,12 +351,13 @@ EndpointsView = {
     },
 
     runAllEndpointTests: function (request) {
+        var self = EndpointsView;
         var url = Config.apiUrl + '/endpoints/tests';
         var loading = Element.createLoadingElement();
         request.parent.appendChild(loading);
         Ajax.getJsonRequest({
             url: url,
-            callback: this.runAllEndpointTestsCallback,
+            callback: self.runAllEndpointTestsCallback,
             callbackArgs: {
                 parent: request.parent,
                 loadingElement: loading
@@ -376,6 +402,41 @@ EndpointsView = {
         row.appendChild(responseStatus);
         row.appendChild(timeElapsed);
         return row;
+    },
+
+    createEndpointsTestMenu: function (args) {
+        var endpointTestsRunButton = document.createElement('button');
+        endpointTestsRunButton.innerHTML = 'Run Tests';
+        endpointTestsRunButton.classList.add('btn');
+        endpointTestsRunButton.classList.add('btn-default');
+        endpointTestsRunButton.onclick = this.endpointTestsRunButtonEventHandler;
+        var endpointTestsButtonWrapper = document.createElement('div');
+        endpointTestsButtonWrapper.classList.add('col-md-6');
+        endpointTestsButtonWrapper.appendChild(endpointTestsRunButton);
+        var endpointTestsTimerWrapper = document.createElement('div');
+        endpointTestsTimerWrapper.classList.add('col-md-6');
+        endpointTestsTimerWrapper.classList.add('endpoint-tests-timer');
+        var nextTestLabel = document.createElement('span');
+        nextTestLabel.innerHTML = 'next test';
+        nextTestLabel.classList.add('label');
+        var nextTestCountdown = document.createElement('span');
+        endpointTestsTimerWrapper.appendChild(nextTestLabel);
+        endpointTestsTimerWrapper.appendChild(nextTestCountdown);
+        Utility.Timer.initEndpointTestTimer({
+            // TODO: get from settings
+            offsetMinutes: 180, 
+            timerElement: nextTestCountdown,
+            timerElapsedCallback: this.runAllEndpointTests,
+            timerElapsedCallbackArgs: {
+                parent: args.endpointTestsContainer
+            }
+        });
+        var endpointTestsMenu = document.createElement('div');
+        endpointTestsMenu.classList.add('row');
+        endpointTestsMenu.classList.add('endpoint-tests-menu');
+        endpointTestsMenu.appendChild(endpointTestsButtonWrapper);
+        endpointTestsMenu.appendChild(endpointTestsTimerWrapper);
+        return endpointTestsMenu;
     },
 
     endpointTestsRunButtonEventHandler: function (e) {

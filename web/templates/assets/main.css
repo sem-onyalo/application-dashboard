@@ -29,6 +29,16 @@ body {
     padding: 15px 5px;
 }
 
+.endpoint-tests-timer {
+    text-align: right;
+    font-size: 1.6em;
+    font-weight: bold;
+}
+
+.endpoint-tests-timer .label {
+    font-variant: small-caps;
+}
+
 /*
  * Loading
  */
@@ -47,7 +57,7 @@ body {
 }
 
 .loading-container > img {
-	width: 50px;
+	width: 150px;
 	vertical-align: middle;
 }
 
