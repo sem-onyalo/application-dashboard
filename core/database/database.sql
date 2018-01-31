@@ -16,3 +16,11 @@ create table endpoint_test (
   response_status varchar(16) not null,
   time_elapsed float not null
 );
+
+create table association (
+  id serial primary key,
+  created_at timestamp default current_timestamp not null,
+  updated_at timestamp default current_timestamp not null,
+  deleted_at timestamp,
+  name varchar(63) not null
+);

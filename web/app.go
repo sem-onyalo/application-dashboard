@@ -26,10 +26,11 @@ const (
 
 // App is a service for performing web application operations
 type App struct {
-	Config    service.Config
-	Endpoint  service.Endpoint
-	Port      int
-	templates *template.Template
+	Association service.Association
+	Config      service.Config
+	Endpoint    service.Endpoint
+	Port        int
+	templates   *template.Template
 }
 
 // apiInfo represents the web api info
@@ -39,7 +40,7 @@ type apiInfo struct {
 }
 
 // NewApp returns a reference to the web application service
-func NewApp(config service.Config, endpoint service.Endpoint) (*App, error) {
+func NewApp(association service.Association, config service.Config, endpoint service.Endpoint) (*App, error) {
 	var app *App
 	var err error
 	var port = defaultWebAppPort
@@ -60,7 +61,13 @@ func NewApp(config service.Config, endpoint service.Endpoint) (*App, error) {
 	// TODO: get root html file from config APPDASH_WEBAPP_ROOTAPPFILE
 	templates := template.Must(template.ParseFiles(templatesDirConfig.Value + "\\root.htm"))
 
-	app = &App{Config: config, Endpoint: endpoint, Port: port, templates: templates}
+	app = &App{
+		Association: association,
+		Config:      config,
+		Endpoint:    endpoint,
+		Port:        port,
+		templates:   templates,
+	}
 	return app, nil
 }
 
@@ -89,6 +96,7 @@ func (a App) setRoutes() {
 	http.HandleFunc("/", a.rootHandler)
 	http.HandleFunc("/assets/", a.assetHandler)
 	http.HandleFunc(fmt.Sprintf("/api/v%s", webAPIVersion), a.rootAPIHandler)
+	http.HandleFunc(fmt.Sprintf("/api/v%s/associations", webAPIVersion), a.associationsHandler)
 	http.HandleFunc(fmt.Sprintf("/api/v%s/endpoints", webAPIVersion), a.endpointsHandler)
 	http.HandleFunc(fmt.Sprintf("/api/v%s/endpoints/tests", webAPIVersion), a.endpointsTestsHandler)
 	http.HandleFunc(fmt.Sprintf("/api/v%s/endpoint-tests", webAPIVersion), a.endpointTestsHandler)
@@ -133,6 +141,28 @@ func (a App) assetHandler(w http.ResponseWriter, r *http.Request) {
 // rootAPIHandler is the http handler for the api root path
 func (a App) rootAPIHandler(w http.ResponseWriter, r *http.Request) {
 	a.apiResponseHandler(w, apiInfo{Name: "SysDash", Version: webAPIVersion})
+}
+
+// assocaitionsHandler handles association requests
+func (a App) associationsHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		a.associationsPostHandler(w, r)
+	default:
+		http.Error(w, "Unsupported HTTP method for path associations/", http.StatusBadRequest)
+	}
+}
+
+// associationsPostHandler handles association POST requests
+func (a App) associationsPostHandler(w http.ResponseWriter, r *http.Request) {
+	var serviceRequest request.CreateAssociation
+	json.NewDecoder(r.Body).Decode(&serviceRequest)
+	serviceResponse, err := a.Association.Create(serviceRequest)
+	if err != nil {
+		// TODO: also send to log service with err
+		http.Error(w, "Create association failed", http.StatusInternalServerError)
+	}
+	a.apiResponseHandler(w, serviceResponse)
 }
 
 // endpointsHandler handles endpoint requests
