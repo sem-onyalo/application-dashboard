@@ -98,7 +98,7 @@ func (a App) setRoutes() {
 	http.HandleFunc(fmt.Sprintf("/api/v%s", webAPIVersion), a.rootAPIHandler)
 	http.HandleFunc(fmt.Sprintf("/api/v%s/associations", webAPIVersion), a.associationsHandler)
 	http.HandleFunc(fmt.Sprintf("/api/v%s/endpoints", webAPIVersion), a.endpointsHandler)
-	http.HandleFunc(fmt.Sprintf("/api/v%s/endpoints/incidences", webAPIVersion), a.endpointsIncidencesHandler)
+	http.HandleFunc(fmt.Sprintf("/api/v%s/endpoints/incidents", webAPIVersion), a.endpointsIncidentsHandler)
 	http.HandleFunc(fmt.Sprintf("/api/v%s/endpoints/tests", webAPIVersion), a.endpointsTestsHandler)
 	http.HandleFunc(fmt.Sprintf("/api/v%s/endpoint-tests", webAPIVersion), a.endpointTestsHandler)
 }
@@ -182,18 +182,30 @@ func (a App) endpointsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// endpointsIncidencesHandler handler endpoint incidences requests
-func (a App) endpointsIncidencesHandler(w http.ResponseWriter, r *http.Request) {
+// endpointsIncidentsHandler handler endpoint incidents requests
+func (a App) endpointsIncidentsHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
+	case http.MethodGet:
+		a.endpointsIncidentsGetHandler(w, r)
 	case http.MethodPost:
-		a.endpointsIncidencesPostHandler(w, r)
+		a.endpointsIncidentsPostHandler(w, r)
 	default:
-		http.Error(w, "Unsupported HTTP method for path endpoints/incidences", http.StatusBadRequest)
+		http.Error(w, "Unsupported HTTP method for path endpoints/incidents", http.StatusBadRequest)
 	}
 }
 
-// endpointsIncidencesPostHandler handler endpoint incidences POST requests
-func (a App) endpointsIncidencesPostHandler(w http.ResponseWriter, r *http.Request) {
+// endpointsIncidentsGetHandler handles endpoint incident GET requests
+func (a App) endpointsIncidentsGetHandler(w http.ResponseWriter, r *http.Request) {
+	res, err := a.Endpoint.GetAllIncidents()
+	if err != nil {
+		// TODO: also send to log service with err
+		http.Error(w, "Get all endpoint incidents failed", http.StatusInternalServerError)
+	}
+	a.apiResponseHandler(w, res)
+}
+
+// endpointsIncidentsPostHandler handles endpoint incident POST requests
+func (a App) endpointsIncidentsPostHandler(w http.ResponseWriter, r *http.Request) {
 	var serviceRequest request.CreateEndpointIncident
 	json.NewDecoder(r.Body).Decode(&serviceRequest)
 	serviceResponse, err := a.Endpoint.CreateIncident(serviceRequest)
