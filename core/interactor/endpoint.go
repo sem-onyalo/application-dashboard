@@ -1,11 +1,13 @@
 package interactor
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/sem-onyalo/application-dashboard/core/entity"
 	"github.com/sem-onyalo/application-dashboard/service"
+	"github.com/sem-onyalo/application-dashboard/service/request"
 	"github.com/sem-onyalo/application-dashboard/service/response"
 )
 
@@ -20,11 +22,12 @@ const (
 // Endpoint is an interactor for interacting with the endpoint entity
 type Endpoint struct {
 	Database service.Database
+	Incident service.Incident
 }
 
 // NewEndpoint creates a pointer to an endpoint interactor
-func NewEndpoint(database service.Database) *Endpoint {
-	return &Endpoint{database}
+func NewEndpoint(database service.Database, incident service.Incident) *Endpoint {
+	return &Endpoint{Database: database, Incident: incident}
 }
 
 // GetAll function gets all endpoints from the datastore
@@ -125,6 +128,45 @@ func (e Endpoint) GetTests() (response.GetEndpointTests, error) {
 
 	r = response.GetEndpointTests{EndpointTests: endpointTests}
 	return r, nil
+}
+
+// CreateIncident creates a new incident for an endpoint
+func (e Endpoint) CreateIncident(req request.CreateEndpointIncident) (response.CreateEndpointIncident, error) {
+	var res response.CreateEndpointIncident
+
+	conn, err := e.Database.NewConnection()
+	if err != nil {
+		return res, err
+	}
+	defer conn.Store.Close()
+
+	var endpoint entity.Endpoint
+	conn.Store.First(&endpoint, req.EndpointID)
+	if endpoint.ID <= 0 {
+		return res, errors.New("Invalid endpoint ID")
+	}
+
+	createIncident, err := e.Incident.Create(request.CreateIncident{
+		Urgency: req.Urgency,
+		Impact:  req.Impact,
+		Details: req.Details,
+	})
+	if err != nil {
+		return res, err
+	}
+
+	var endpointIncident = entity.EndpointIncident{
+		EndpointID: req.EndpointID,
+		IncidentID: createIncident.ID,
+	}
+	conn.Store.Create(&endpointIncident)
+
+	res.EndpointID = req.EndpointID
+	res.EndpointName = endpoint.Name
+	res.IncidentUrgency = req.Urgency
+	res.IncidentImpact = req.Impact
+	res.IncidentDetails = req.Details
+	return res, nil
 }
 
 // saveTest saves an endpoint test record

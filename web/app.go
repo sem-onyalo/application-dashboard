@@ -98,8 +98,15 @@ func (a App) setRoutes() {
 	http.HandleFunc(fmt.Sprintf("/api/v%s", webAPIVersion), a.rootAPIHandler)
 	http.HandleFunc(fmt.Sprintf("/api/v%s/associations", webAPIVersion), a.associationsHandler)
 	http.HandleFunc(fmt.Sprintf("/api/v%s/endpoints", webAPIVersion), a.endpointsHandler)
+	http.HandleFunc(fmt.Sprintf("/api/v%s/endpoints/incidences", webAPIVersion), a.endpointsIncidencesHandler)
 	http.HandleFunc(fmt.Sprintf("/api/v%s/endpoints/tests", webAPIVersion), a.endpointsTestsHandler)
 	http.HandleFunc(fmt.Sprintf("/api/v%s/endpoint-tests", webAPIVersion), a.endpointTestsHandler)
+}
+
+// apiResponseHandler handles the response for successful requests
+func (a App) apiResponseHandler(w http.ResponseWriter, v interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(v)
 }
 
 // rootHandler is the http handler for the root path
@@ -175,6 +182,28 @@ func (a App) endpointsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// endpointsIncidencesHandler handler endpoint incidences requests
+func (a App) endpointsIncidencesHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		a.endpointsIncidencesPostHandler(w, r)
+	default:
+		http.Error(w, "Unsupported HTTP method for path endpoints/incidences", http.StatusBadRequest)
+	}
+}
+
+// endpointsIncidencesPostHandler handler endpoint incidences POST requests
+func (a App) endpointsIncidencesPostHandler(w http.ResponseWriter, r *http.Request) {
+	var serviceRequest request.CreateEndpointIncident
+	json.NewDecoder(r.Body).Decode(&serviceRequest)
+	serviceResponse, err := a.Endpoint.CreateIncident(serviceRequest)
+	if err != nil {
+		// TODO: also send to log service with err
+		http.Error(w, "Create endpoint incident failed", http.StatusInternalServerError)
+	}
+	a.apiResponseHandler(w, serviceResponse)
+}
+
 // endpointsTestsHandler handler endpoint test requests
 func (a App) endpointsTestsHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -199,12 +228,6 @@ func (a App) endpointsGetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.apiResponseHandler(w, getAllEndpoints.Endpoints)
-}
-
-// apiResponseHandler handles the response for successful requests
-func (a App) apiResponseHandler(w http.ResponseWriter, v interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(v)
 }
 
 // endpointTestsHandler handles endpoint-test requests

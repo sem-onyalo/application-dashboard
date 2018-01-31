@@ -20,7 +20,8 @@ func main() {
 	}
 
 	associationService := interactor.NewAssociation(databaseService)
-	endpointService := interactor.NewEndpoint(databaseService)
+	incidentService := interactor.NewIncident(databaseService)
+	endpointService := interactor.NewEndpoint(databaseService, incidentService)
 
 	appService, err := web.NewApp(associationService, configService, endpointService)
 	if err != nil {

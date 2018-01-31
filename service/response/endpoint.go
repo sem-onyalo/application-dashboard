@@ -18,3 +18,12 @@ type TestAllEndpoints struct {
 type GetEndpointTests struct {
 	EndpointTests []entity.EndpointTest
 }
+
+// CreateEndpointIncident represents the response to a create endpoint incident request
+type CreateEndpointIncident struct {
+	EndpointID      uint
+	EndpointName    string
+	IncidentUrgency int
+	IncidentImpact  int
+	IncidentDetails string
+}
