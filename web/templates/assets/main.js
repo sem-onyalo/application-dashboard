@@ -142,7 +142,7 @@ Utility = {
                 self.timerElapsedCallback(self.timerElapsedCallbackArgs);
             }
         },
-        setTimerDeadline: function(args) {
+        setTimerDeadline: function (args) {
             var deadlineDate = new Date();
             deadlineDate.setMinutes(deadlineDate.getMinutes() + this.offsetMinutes);
             this.timerDeadline = deadlineDate.getTime();
@@ -239,12 +239,71 @@ ContentView = {
     },
 
     createRootElement: function () {
+        var testsTab = document.createElement('a');
+        testsTab.classList.add('nav-link');
+        testsTab.id = 'tests-tab';
+        testsTab.href = '#tests';
+        testsTab.innerHTML = 'Tests';
+        testsTab.setAttribute('data-toggle', 'tab');
+        testsTab.setAttribute('role', 'tab');
+        var testsTabWrapper = document.createElement('li');
+        testsTabWrapper.classList.add('nav-item');
+        testsTabWrapper.classList.add('active');
+        testsTabWrapper.appendChild(testsTab);
+        var incidentsTab = document.createElement('a');
+        incidentsTab.classList.add('nav-link');
+        incidentsTab.id = 'incidents-tab';
+        incidentsTab.href = '#incidents';
+        incidentsTab.innerHTML = 'Incidents';
+        incidentsTab.setAttribute('data-toggle', 'tab');
+        incidentsTab.setAttribute('role', 'tab');
+        var incidentsTabWrapper = document.createElement('li');
+        incidentsTabWrapper.classList.add('nav-item');
+        incidentsTabWrapper.appendChild(incidentsTab);
+        var tabBar = document.createElement('ul');
+        tabBar.classList.add('nav');
+        tabBar.classList.add('nav-tabs');
+        tabBar.id = 'endpointTabBar';
+        tabBar.role = 'tablist';
+        tabBar.appendChild(testsTabWrapper);
+        tabBar.appendChild(incidentsTabWrapper);
+
+        var testTabContent = document.createElement('div');
+        testTabContent.id = 'tests';
+        testTabContent.classList.add('tab-pane');
+        testTabContent.classList.add('fade');
+        testTabContent.classList.add('active');
+        testTabContent.classList.add('in');
+        testTabContent.role = 'tabpanel';
+        var incidentTabContent = document.createElement('div');
+        incidentTabContent.id = 'incidents';
+        incidentTabContent.classList.add('tab-pane');
+        incidentTabContent.classList.add('fade');
+        incidentTabContent.role = 'tabpanel';
+        var tabContent = document.createElement('div');
+        tabContent.classList.add('tab-content');
+        tabContent.id = 'endpointTabContent';
+        tabContent.appendChild(testTabContent);
+        tabContent.appendChild(incidentTabContent);
+
         var endpointsViewContainer = document.createElement('div');
         var root = document.createElement('div');
         root.appendChild(endpointsViewContainer);
+
         EndpointsView.load({
             parent: endpointsViewContainer
         });
+
+        EndpointTestsView.load({
+            parent: testTabContent
+        });
+
+        IncidentsView.load({
+            parent: incidentTabContent
+        });
+
+        endpointsViewContainer.appendChild(tabBar);
+        endpointsViewContainer.appendChild(tabContent);
         return root;
     }
 };
@@ -256,42 +315,9 @@ EndpointsView = {
         var endpointsContainer = document.createElement('div');
         endpointsContainer.appendChild(endpointsWrapper);
         request.parent.appendChild(endpointsContainer);
-        var testDate = document.createElement('th');
-        testDate.innerHTML = "Test Date &amp; Time";
-        var name = document.createElement('th');
-        name.innerHTML = "Name";
-        var url = document.createElement('th');
-        url.innerHTML = "URL";
-        var responseStatus = document.createElement('th');
-        responseStatus.innerHTML = "Response Status";
-        var timeElapsed = document.createElement('th');
-        timeElapsed.innerHTML = "Time Elapsed";
-        var endpointTestsTableHead = document.createElement('thead');
-        endpointTestsTableHead.appendChild(testDate);
-        endpointTestsTableHead.appendChild(name);
-        endpointTestsTableHead.appendChild(url);
-        endpointTestsTableHead.appendChild(responseStatus);
-        endpointTestsTableHead.appendChild(timeElapsed);
-        var endpointTestsTableBody = document.createElement('tbody');
-        var endpointTestsTable = document.createElement('table');
-        endpointTestsTable.classList.add("table");
-        endpointTestsTable.appendChild(endpointTestsTableHead);
-        endpointTestsTable.appendChild(endpointTestsTableBody);
-        var endpointTestsMenu = this.createEndpointsTestMenu({
-            endpointTestsContainer: endpointTestsTableBody
-        });
-        var endpointTestsContainer = document.createElement('div');
-        endpointTestsContainer.classList.add("endpoint-tests");
-        endpointTestsContainer.appendChild(endpointTestsMenu);
-        endpointTestsContainer.appendChild(endpointTestsTable);
-        request.parent.appendChild(endpointTestsContainer);
 
         this.loadEndpoints({
             parent: endpointsWrapper
-        });
-
-        this.loadEnpointTests({
-            parent: endpointTestsTableBody
         });
     },
 
@@ -322,6 +348,45 @@ EndpointsView = {
             item.appendChild(url);
             args.parent.appendChild(item);
         }
+    }
+};
+
+EndpointTestsView = {
+    load: function (request) {
+        var testDate = document.createElement('th');
+        testDate.innerHTML = "Test Date";
+        var name = document.createElement('th');
+        name.innerHTML = "Name";
+        var url = document.createElement('th');
+        url.innerHTML = "URL";
+        var responseStatus = document.createElement('th');
+        responseStatus.innerHTML = "Response Status";
+        var timeElapsed = document.createElement('th');
+        timeElapsed.innerHTML = "Time Elapsed";
+        var endpointTestsTableHead = document.createElement('thead');
+        endpointTestsTableHead.appendChild(testDate);
+        endpointTestsTableHead.appendChild(name);
+        endpointTestsTableHead.appendChild(url);
+        endpointTestsTableHead.appendChild(responseStatus);
+        endpointTestsTableHead.appendChild(timeElapsed);
+        var endpointTestsTableBody = document.createElement('tbody');
+        var endpointTestsTable = document.createElement('table');
+        endpointTestsTable.classList.add("table");
+        endpointTestsTable.appendChild(endpointTestsTableHead);
+        endpointTestsTable.appendChild(endpointTestsTableBody);
+
+        var endpointTestsMenu = this.createEndpointsTestMenu({
+            endpointTestsContainer: endpointTestsTableBody
+        });
+        var endpointTestsContainer = document.createElement('div');
+        endpointTestsContainer.classList.add(Constants.endpointTestsContainerCssClass);
+        endpointTestsContainer.appendChild(endpointTestsMenu);
+        endpointTestsContainer.appendChild(endpointTestsTable);
+        request.parent.appendChild(endpointTestsContainer);
+
+        this.loadEnpointTests({
+            parent: endpointTestsTableBody
+        });
     },
 
     loadEnpointTests: function (request) {
@@ -336,7 +401,7 @@ EndpointsView = {
     },
 
     loadEndpointTestsCallback: function (resp, args) {
-        var self = EndpointsView;
+        var self = EndpointTestsView;
         for (var i = 0; i < resp.EndpointTests.length; i++) {
             var row = self.createEndpointTestRow({
                 createdAt: resp.EndpointTests[i].CreatedAt,
@@ -351,7 +416,7 @@ EndpointsView = {
     },
 
     runAllEndpointTests: function (request) {
-        var self = EndpointsView;
+        var self = EndpointTestsView;
         var url = Config.apiUrl + '/endpoints/tests';
         var loading = Element.createLoadingElement();
         request.parent.appendChild(loading);
@@ -366,7 +431,7 @@ EndpointsView = {
     },
 
     runAllEndpointTestsCallback: function (resp, args) {
-        var self = EndpointsView;
+        var self = EndpointTestsView;
         for (var i = 0; i < resp.length; i++) {
             var row = self.createEndpointTestRow({
                 createdAt: resp[i].CreatedAt,
@@ -424,7 +489,7 @@ EndpointsView = {
         endpointTestsTimerWrapper.appendChild(nextTestCountdown);
         Utility.Timer.initEndpointTestTimer({
             // TODO: get from settings
-            offsetMinutes: 180, 
+            offsetMinutes: 180,
             timerElement: nextTestCountdown,
             timerElapsedCallback: this.runAllEndpointTests,
             timerElapsedCallbackArgs: {
@@ -440,7 +505,7 @@ EndpointsView = {
     },
 
     endpointTestsRunButtonEventHandler: function (e) {
-        var self = EndpointsView;
+        var self = EndpointTestsView;
         var endpointTestsContainer = Element.findParentElementByClassName(e.target, Constants.endpointTestsContainerCssClass);
         var endpointTestsBody = endpointTestsContainer.getElementsByTagName('tbody')[0];
         if (!endpointTestsBody) {
@@ -451,6 +516,96 @@ EndpointsView = {
             });
         }
     }
+};
+
+IncidentsView = {
+    load: function (request) {
+        var incidentDate = document.createElement('th');
+        incidentDate.innerHTML = "Reported Date";
+        var endpointName = document.createElement('th');
+        endpointName.innerHTML = "Endpoint";
+        var details = document.createElement('th');
+        details.innerHTML = "Details";
+        var incidentsTableHead = document.createElement('thead');
+        incidentsTableHead.appendChild(incidentDate);
+        incidentsTableHead.appendChild(endpointName);
+        incidentsTableHead.appendChild(details);
+        var incidentsTableBody = document.createElement('tbody');
+        var incidentsTable = document.createElement('table');
+        incidentsTable.classList.add("table");
+        incidentsTable.appendChild(incidentsTableHead);
+        incidentsTable.appendChild(incidentsTableBody);
+        this.loadIncidents({
+            parent: incidentsTableBody
+        });
+
+        var menu = this.createMenu();
+        var root = document.createElement('div');
+        root.appendChild(menu);
+        root.appendChild(incidentsTable);
+        request.parent.appendChild(root);
+    },
+
+    createMenu: function () {
+        var newButton = document.createElement('button');
+        newButton.innerHTML = 'New Incident';
+        newButton.classList.add('btn');
+        newButton.classList.add('btn-default');
+        newButton.onclick = this.newButtonEventHandler;
+        var buttonsWrapper = document.createElement('div');
+        buttonsWrapper.classList.add('col-md-6');
+        buttonsWrapper.appendChild(newButton);
+        var otherActionsWrapper = document.createElement('div');
+        otherActionsWrapper.classList.add('col-md-6');
+        var menu = document.createElement('div');
+        menu.classList.add('row');
+        menu.classList.add('incidents-menu');
+        menu.appendChild(buttonsWrapper);
+        menu.appendChild(otherActionsWrapper);
+        return menu;
+    },
+
+    loadIncidents: function (request) {
+        var url = Config.apiUrl + '/endpoints/incidents';
+        Ajax.getJsonRequest({
+            url: url,
+            callback: this.loadIncidentsCallback,
+            callbackArgs: {
+                parent: request.parent
+            }
+        });
+    },
+
+    loadIncidentsCallback: function (res, args) {
+        var self = IncidentsView;
+        for (var i = 0; i < res.Incidents.length; i++) {
+            var row = self.createIncidentRow({
+                createdAt: res.Incidents[i].IncidentCreatedAt,
+                endpointName: res.Incidents[i].EndpointName,
+                urgency: res.Incidents[i].IncidentUrgency,
+                impact: res.Incidents[i].IncidentImpact,
+                details: res.Incidents[i].IncidentDetails
+            });
+
+            args.parent.appendChild(row);
+        }
+    },
+
+    createIncidentRow: function (args) {
+        var incidentDate = document.createElement('td');
+        incidentDate.innerHTML = args.createdAt;
+        var endpointName = document.createElement('td');
+        endpointName.innerHTML = args.endpointName;
+        var details = document.createElement('td');
+        details.innerHTML = args.details;
+        var row = document.createElement('tr');
+        row.appendChild(incidentDate);
+        row.appendChild(endpointName);
+        row.appendChild(details);
+        return row;
+    },
+
+    newButtonEventHandler: function (e) {}
 };
 
 /*
