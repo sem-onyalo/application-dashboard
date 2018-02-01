@@ -260,6 +260,16 @@ ContentView = {
         var incidentsTabWrapper = document.createElement('li');
         incidentsTabWrapper.classList.add('nav-item');
         incidentsTabWrapper.appendChild(incidentsTab);
+        var resolutionsTab = document.createElement('a');
+        resolutionsTab.classList.add('nav-link');
+        resolutionsTab.id = 'resolutions-tab';
+        resolutionsTab.href = '#resolutions';
+        resolutionsTab.innerHTML = 'Resolutions';
+        resolutionsTab.setAttribute('data-toggle', 'tab');
+        resolutionsTab.setAttribute('role', 'tab');
+        var resolutionsTabWrapper = document.createElement('li');
+        resolutionsTabWrapper.classList.add('nav-item');
+        resolutionsTabWrapper.appendChild(resolutionsTab);
         var tabBar = document.createElement('ul');
         tabBar.classList.add('nav');
         tabBar.classList.add('nav-tabs');
@@ -267,6 +277,7 @@ ContentView = {
         tabBar.role = 'tablist';
         tabBar.appendChild(testsTabWrapper);
         tabBar.appendChild(incidentsTabWrapper);
+        tabBar.appendChild(resolutionsTabWrapper);
 
         var testTabContent = document.createElement('div');
         testTabContent.id = 'tests';
@@ -275,16 +286,22 @@ ContentView = {
         testTabContent.classList.add('active');
         testTabContent.classList.add('in');
         testTabContent.role = 'tabpanel';
-        var incidentTabContent = document.createElement('div');
-        incidentTabContent.id = 'incidents';
-        incidentTabContent.classList.add('tab-pane');
-        incidentTabContent.classList.add('fade');
-        incidentTabContent.role = 'tabpanel';
+        var incidentsTabContent = document.createElement('div');
+        incidentsTabContent.id = 'incidents';
+        incidentsTabContent.classList.add('tab-pane');
+        incidentsTabContent.classList.add('fade');
+        incidentsTabContent.role = 'tabpanel';
+        var resolutionsTabContent = document.createElement('div');
+        resolutionsTabContent.id = 'resolutions';
+        resolutionsTabContent.classList.add('tab-pane');
+        resolutionsTabContent.classList.add('fade');
+        resolutionsTabContent.role = 'tabpanel';
         var tabContent = document.createElement('div');
         tabContent.classList.add('tab-content');
         tabContent.id = 'endpointTabContent';
         tabContent.appendChild(testTabContent);
-        tabContent.appendChild(incidentTabContent);
+        tabContent.appendChild(incidentsTabContent);
+        tabContent.appendChild(resolutionsTabContent);
 
         var endpointsViewContainer = document.createElement('div');
         var root = document.createElement('div');
@@ -299,7 +316,11 @@ ContentView = {
         });
 
         IncidentsView.load({
-            parent: incidentTabContent
+            parent: incidentsTabContent
+        });
+
+        ResolutionsView.load({
+            parent: resolutionsTabContent
         });
 
         endpointsViewContainer.appendChild(tabBar);
@@ -535,6 +556,7 @@ IncidentsView = {
         incidentsTable.classList.add("table");
         incidentsTable.appendChild(incidentsTableHead);
         incidentsTable.appendChild(incidentsTableBody);
+
         this.loadIncidents({
             parent: incidentsTableBody
         });
@@ -606,6 +628,97 @@ IncidentsView = {
     },
 
     newButtonEventHandler: function (e) {}
+};
+
+ResolutionsView = {
+    load: function (request) {
+        var resolutionDate = document.createElement('th');
+        resolutionDate.innerHTML = "Resolution Date";
+        var endpointName = document.createElement('th');
+        endpointName.innerHTML = "Name";
+        var details = document.createElement('th');
+        details.innerHTML = "Details";
+        var resolutionsTableHead = document.createElement('thead');
+        resolutionsTableHead.appendChild(resolutionDate);
+        resolutionsTableHead.appendChild(endpointName);
+        resolutionsTableHead.appendChild(details);
+        var resolutionsTableBody = document.createElement('tbody');
+        var resolutionsTable = document.createElement('table');
+        resolutionsTable.classList.add("table");
+        resolutionsTable.appendChild(resolutionsTableHead);
+        resolutionsTable.appendChild(resolutionsTableBody);
+
+        this.loadResolutions({
+            parent: resolutionsTableBody
+        });
+
+        var menu = this.createMenu();
+        var root = document.createElement('div');
+        root.appendChild(menu);
+        root.appendChild(resolutionsTable);
+        request.parent.appendChild(root);
+    },
+
+    loadResolutions: function (request) {
+        var url = Config.apiUrl + '/incidents/resolutions';
+        Ajax.getJsonRequest({
+            url: url,
+            callback: this.loadResolutionsCallback,
+            callbackArgs: {
+                parent: request.parent
+            }
+        });
+    },
+
+    loadResolutionsCallback: function (res, args) {
+        var self = ResolutionsView;
+        for (var i = 0; i < res.Resolutions.length; i++) {
+            var row = self.createResolutionRow({
+                createdAt: res.Resolutions[i].ResolutionCreatedAt,
+                name: res.Resolutions[i].ResolutionName,
+                details: res.Resolutions[i].ResolutionDetails
+            });
+            args.parent.appendChild(row);
+        }
+    },
+
+    createResolutionRow: function (args) {
+        var resolutionDate = document.createElement('td');
+        resolutionDate.innerHTML = args.createdAt;
+        var name = document.createElement('td');
+        name.innerHTML = args.name;
+        var details = document.createElement('td');
+        details.innerHTML = args.details;
+        var row = document.createElement('tr');
+        row.appendChild(resolutionDate);
+        row.appendChild(name);
+        row.appendChild(details);
+        return row;
+    },
+
+    createMenu: function() {
+        var searchInput = document.createElement('textarea');
+        searchInput.classList.add('form-control');
+        searchInput.placeholder = 'Input incident data to search resolutions';
+        searchInput.style.height = '150px';
+        var searchButton = document.createElement('button');
+        searchButton.innerHTML = 'Search';
+        searchButton.classList.add('btn');
+        searchButton.classList.add('btn-default');
+        searchButton.classList.add('form-control');
+        var searchWrapper = document.createElement('div');
+        searchWrapper.classList.add('col-md-6');
+        searchWrapper.appendChild(searchInput);
+        searchWrapper.appendChild(searchButton);
+        var otherActionsWrapper = document.createElement('div');
+        otherActionsWrapper.classList.add('col-md-6');
+        var menu = document.createElement('div');
+        menu.classList.add('row');
+        menu.classList.add('resolutions-menu');
+        menu.appendChild(searchWrapper);
+        menu.appendChild(otherActionsWrapper);
+        return menu;
+    }
 };
 
 /*
