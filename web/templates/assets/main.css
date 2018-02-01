@@ -9,11 +9,16 @@ body {
  */
 
 .endpoint {
-    margin: 10px;
+    margin: 10px 5px;
     padding: 20px 10px;
     color: #9dbed8;
     border: 1px solid #2d3143;
     background-color: #2d3143;
+}
+
+.endpoint:hover {
+    background-color: #f27705;
+    color: #111111;
 }
 
 .endpoint .name {
@@ -23,6 +28,10 @@ body {
 
 .endpoint .url {
     font-size: 0.8em;
+}
+
+.endpoint-components {
+    padding: 15px 5px;
 }
 
 .endpoint-tests-menu {

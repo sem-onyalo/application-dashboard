@@ -303,12 +303,9 @@ ContentView = {
         tabContent.appendChild(incidentsTabContent);
         tabContent.appendChild(resolutionsTabContent);
 
-        var endpointsViewContainer = document.createElement('div');
-        var root = document.createElement('div');
-        root.appendChild(endpointsViewContainer);
-
+        var endpointList = document.createElement('div');
         EndpointsView.load({
-            parent: endpointsViewContainer
+            parent: endpointList
         });
 
         EndpointTestsView.load({
@@ -323,8 +320,13 @@ ContentView = {
             parent: resolutionsTabContent
         });
 
-        endpointsViewContainer.appendChild(tabBar);
-        endpointsViewContainer.appendChild(tabContent);
+        var endpointComponents = document.createElement('div');
+        endpointComponents.classList.add('endpoint-components');
+        endpointComponents.appendChild(tabBar);
+        endpointComponents.appendChild(tabContent);
+        var root = document.createElement('div');
+        root.appendChild(endpointList);
+        root.appendChild(endpointComponents);
         return root;
     }
 };
@@ -362,12 +364,15 @@ EndpointsView = {
             url.classList.add('url');
             url.innerHTML = resp[i].URL;
             var item = document.createElement('div');
-            item.classList.add('col-sm-2');
-            item.classList.add('col-md-4');
             item.classList.add('endpoint');
             item.appendChild(name);
             item.appendChild(url);
-            args.parent.appendChild(item);
+            var itemWrapper = document.createElement('div');
+            itemWrapper.classList.add('col-sm-6');
+            itemWrapper.classList.add('col-md-4');
+            itemWrapper.classList.add('col-lg-3');
+            itemWrapper.appendChild(item);
+            args.parent.appendChild(itemWrapper);
         }
     }
 };
@@ -423,16 +428,18 @@ EndpointTestsView = {
 
     loadEndpointTestsCallback: function (resp, args) {
         var self = EndpointTestsView;
-        for (var i = 0; i < resp.EndpointTests.length; i++) {
-            var row = self.createEndpointTestRow({
-                createdAt: resp.EndpointTests[i].CreatedAt,
-                name: resp.EndpointTests[i].Name,
-                url: resp.EndpointTests[i].URL,
-                responseStatus: resp.EndpointTests[i].ResponseStatus,
-                timeElapsed: resp.EndpointTests[i].TimeElapsed
-            });
+        if (resp.EndpointTests) {
+            for (var i = 0; i < resp.EndpointTests.length; i++) {
+                var row = self.createEndpointTestRow({
+                    createdAt: resp.EndpointTests[i].CreatedAt,
+                    name: resp.EndpointTests[i].Name,
+                    url: resp.EndpointTests[i].URL,
+                    responseStatus: resp.EndpointTests[i].ResponseStatus,
+                    timeElapsed: resp.EndpointTests[i].TimeElapsed
+                });
 
-            args.parent.appendChild(row);
+                args.parent.appendChild(row);
+            }
         }
     },
 
@@ -600,16 +607,18 @@ IncidentsView = {
 
     loadIncidentsCallback: function (res, args) {
         var self = IncidentsView;
-        for (var i = 0; i < res.Incidents.length; i++) {
-            var row = self.createIncidentRow({
-                createdAt: res.Incidents[i].IncidentCreatedAt,
-                endpointName: res.Incidents[i].EndpointName,
-                urgency: res.Incidents[i].IncidentUrgency,
-                impact: res.Incidents[i].IncidentImpact,
-                details: res.Incidents[i].IncidentDetails
-            });
+        if (res.Incidents) {
+            for (var i = 0; i < res.Incidents.length; i++) {
+                var row = self.createIncidentRow({
+                    createdAt: res.Incidents[i].IncidentCreatedAt,
+                    endpointName: res.Incidents[i].EndpointName,
+                    urgency: res.Incidents[i].IncidentUrgency,
+                    impact: res.Incidents[i].IncidentImpact,
+                    details: res.Incidents[i].IncidentDetails
+                });
 
-            args.parent.appendChild(row);
+                args.parent.appendChild(row);
+            }
         }
     },
 
@@ -619,7 +628,7 @@ IncidentsView = {
         var endpointName = document.createElement('td');
         endpointName.innerHTML = args.endpointName;
         var details = document.createElement('td');
-        details.innerHTML = args.details;
+        details.innerHTML = $('<div/>').text(args.details).html();
         var row = document.createElement('tr');
         row.appendChild(incidentDate);
         row.appendChild(endpointName);
@@ -672,13 +681,15 @@ ResolutionsView = {
 
     loadResolutionsCallback: function (res, args) {
         var self = ResolutionsView;
-        for (var i = 0; i < res.Resolutions.length; i++) {
-            var row = self.createResolutionRow({
-                createdAt: res.Resolutions[i].ResolutionCreatedAt,
-                name: res.Resolutions[i].ResolutionName,
-                details: res.Resolutions[i].ResolutionDetails
-            });
-            args.parent.appendChild(row);
+        if (res.Resolutions) {
+            for (var i = 0; i < res.Resolutions.length; i++) {
+                var row = self.createResolutionRow({
+                    createdAt: res.Resolutions[i].ResolutionCreatedAt,
+                    name: res.Resolutions[i].ResolutionName,
+                    details: res.Resolutions[i].ResolutionDetails
+                });
+                args.parent.appendChild(row);
+            }
         }
     },
 
@@ -688,7 +699,7 @@ ResolutionsView = {
         var name = document.createElement('td');
         name.innerHTML = args.name;
         var details = document.createElement('td');
-        details.innerHTML = args.details;
+        details.innerHTML = $('<div/>').text(args.details).html();
         var row = document.createElement('tr');
         row.appendChild(resolutionDate);
         row.appendChild(name);
