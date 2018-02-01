@@ -29,6 +29,7 @@ type App struct {
 	Association service.Association
 	Config      service.Config
 	Endpoint    service.Endpoint
+	Incident    service.Incident
 	Port        int
 	templates   *template.Template
 }
@@ -40,7 +41,7 @@ type apiInfo struct {
 }
 
 // NewApp returns a reference to the web application service
-func NewApp(association service.Association, config service.Config, endpoint service.Endpoint) (*App, error) {
+func NewApp(association service.Association, config service.Config, endpoint service.Endpoint, incident service.Incident) (*App, error) {
 	var app *App
 	var err error
 	var port = defaultWebAppPort
@@ -65,6 +66,7 @@ func NewApp(association service.Association, config service.Config, endpoint ser
 		Association: association,
 		Config:      config,
 		Endpoint:    endpoint,
+		Incident:    incident,
 		Port:        port,
 		templates:   templates,
 	}
@@ -101,12 +103,18 @@ func (a App) setRoutes() {
 	http.HandleFunc(fmt.Sprintf("/api/v%s/endpoints/incidents", webAPIVersion), a.endpointsIncidentsHandler)
 	http.HandleFunc(fmt.Sprintf("/api/v%s/endpoints/tests", webAPIVersion), a.endpointsTestsHandler)
 	http.HandleFunc(fmt.Sprintf("/api/v%s/endpoint-tests", webAPIVersion), a.endpointTestsHandler)
+	http.HandleFunc(fmt.Sprintf("/api/v%s/incidents/resolutions", webAPIVersion), a.incidentsResolutionsHandler)
 }
 
 // apiResponseHandler handles the response for successful requests
 func (a App) apiResponseHandler(w http.ResponseWriter, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(v)
+}
+
+// apiErrorResponseHandler handles the response for unsuccessful requests
+func (a App) apiErrorResponseHandler(w http.ResponseWriter, v interface{}, err error) {
+	// TODO: implement and pipe all request errors through here
 }
 
 // rootHandler is the http handler for the root path
@@ -255,4 +263,38 @@ func (a App) endpointTestsHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.Error(w, "Unsupported HTTP method for path endpoint-tests/", http.StatusBadRequest)
 	}
+}
+
+// incidentsResolutionsHandler handles incident resolution requests
+func (a App) incidentsResolutionsHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		a.incidentsResolutionsGetHandler(w, r)
+	case http.MethodPost:
+		a.incidentsResolutionsPostHandler(w, r)
+	default:
+		http.Error(w, "Unsupported HTTP method for path incidents/resolutions/", http.StatusBadRequest)
+	}
+}
+
+// incidentsResolutionsGetHandler handles incident resolution GET requests
+func (a App) incidentsResolutionsGetHandler(w http.ResponseWriter, r *http.Request) {
+	getResolutions, err := a.Incident.GetAllResolutions()
+	if err != nil {
+		// TODO: also send to log service with err
+		http.Error(w, "Get incident resolutions request failed", http.StatusInternalServerError)
+	}
+	a.apiResponseHandler(w, getResolutions)
+}
+
+// incidentsResolutionsPostHandler handles incident resolution POST requests
+func (a App) incidentsResolutionsPostHandler(w http.ResponseWriter, r *http.Request) {
+	var serviceRequest request.CreateIncidentResolution
+	json.NewDecoder(r.Body).Decode(&serviceRequest)
+	serviceResponse, err := a.Incident.CreateResolution(serviceRequest)
+	if err != nil {
+		// TODO: also send to log service with err
+		http.Error(w, "Create incident resolution failed", http.StatusInternalServerError)
+	}
+	a.apiResponseHandler(w, serviceResponse)
 }

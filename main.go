@@ -20,10 +20,11 @@ func main() {
 	}
 
 	associationService := interactor.NewAssociation(databaseService)
-	incidentService := interactor.NewIncident(databaseService)
+	resolutionService := interactor.NewResolution(databaseService)
+	incidentService := interactor.NewIncident(databaseService, resolutionService)
 	endpointService := interactor.NewEndpoint(databaseService, incidentService)
 
-	appService, err := web.NewApp(associationService, configService, endpointService)
+	appService, err := web.NewApp(associationService, configService, endpointService, incidentService)
 	if err != nil {
 		// TODO: send to log service
 		fmt.Printf("Create web app service failed: %s\n", err)
